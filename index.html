@@ -45,6 +45,8 @@ fritos:{n:"Fritos",i:"🍟",s:[["Cestas y producto",[["Cada producto en una cest
 ["Higiene y equipo",[SAN,["Paño rojo respectivo en uso"],["Silver en buen funcionamiento"]]],["Control PHU",PHU]]},
 board:{n:"Board",i:"🥪",s:[["Board",[["Pan en retención máximo 30 seg"],SAN,["Paño rojo respectivo en uso"],["Sin contaminación cruzada"]]],["Control PHU",PHU]]}};
 const WASH=["Mójate manos y antebrazos con agua caliente","Aplica jabón","Frota palmas entre sí","Frota dorso de cada mano con la otra","Entrelaza dedos y frota entre ellos","Frota uñas y pulgares","Cepilla uñas si corresponde","Enjuaga bien (total ~20 seg de fricción)","Seca con toalla desechable","Cierra la llave con la toalla y bota en basurero de pedal","Aplica alcohol gel"];
+const ENDPOINT="https://script.google.com/macros/s/AKfycbwxcwhNPinTWUuF8DcTihbvFkN0ccRFjq2cSpOs5dQbwARo47AVkmUtF8D4v4kU_W6S/exec";
+function send(o){if(!ENDPOINT||ENDPOINT.indexOf('http')!==0)return Promise.resolve(false);o.ua=navigator.userAgent.slice(0,90);return fetch(ENDPOINT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(o)}).then(()=>true,()=>false)}
 const $=s=>document.querySelector(s),app=$('#app');
 const key=id=>'chk_'+id+'_'+new Date().toISOString().slice(0,10);
 let state={};
@@ -54,18 +56,22 @@ function total(id){return ST[id].s.reduce((a,s)=>a+s[1].length,0)}
 function route(){const id=location.hash.slice(1);if(id==='qr')return qrView();if(ST[id])return stView(id);home()}
 function home(){app.innerHTML=`<h1>Checklist de estaciones</h1><div class="c">${Object.keys(ST).map(k=>`<button class="st" onclick="location.hash='${k}'">${ST[k].i} ${ST[k].n}</button>`).join('')}</div>
 <p><button class="btn g" onclick="location.hash='qr'">Generar códigos QR</button></p>`}
-function stView(id){load(id);const S=ST[id];let n=0;
+let opened={};function stView(id){load(id);const S=ST[id];let n=0;if(!opened[id]){opened[id]=1;send({tipo:'apertura',estacion:S.n})}
 let h=`<p class="np"><a href="#" onclick="location.hash='';return false" class="mu">← Todas las estaciones</a></p><h1>${S.i} ${S.n}</h1><div class="mu">${new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'})}</div><div class="bar"><i id="pb"></i></div><div class="mu" id="pt"></div>`;
 S.s.forEach((sec,si)=>{h+=`<h2>${sec[0]}</h2><div class="c">`;sec[1].forEach((it,ii)=>{const k=si+'_'+ii,on=state[k]&&state[k].c;
 h+=`<label class="it ${on?'on':''}" id="r${k}"><input type="checkbox" ${on?'checked':''} onchange="tg('${id}','${k}',this)"><span style="flex:1"><span class="t">${it[0]}</span>`+
 (it[1]?`<input class="x" type="${it[1]==='d'?'date':'text'}" placeholder="${it[1]==='p'?'Concentración (ppm) medida':''}" value="${(state[k]&&state[k].v)||''}" onclick="event.stopPropagation()" oninput="vl('${id}','${k}',this.value)">`:'')+`</span></label>`});h+=`</div>`});
 if(S.wash)h+=`<h2>Procedimiento de lavado de manos</h2><div class="c">${WASH.map((w,i)=>`<div class="it"><b style="width:24px;color:var(--ac)">${i+1}</b><span>${w}</span></div>`).join('')}</div>`;
 h+=`<h2>Observaciones</h2><textarea class="x it" style="width:100%;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;font:inherit;padding:10px" rows="3" oninput="vl('${id}','obs',this.value)">${(state.obs&&state.obs.v)||''}</textarea>
-<p class="np"><button class="btn" onclick="cp('${id}')">Copiar resumen</button><button class="btn g" onclick="rs('${id}')">Reiniciar</button></p><div class="mu" id="msg"></div>`;
+<h2>Responsable</h2><input class="u" id="who" placeholder="Nombre de quien revisa" value="${(state.who&&state.who.v)||''}" oninput="vl('${id}','who',this.value)">
+<p class="np"><button class="btn" onclick="env('${id}')">Enviar registro</button><button class="btn g" onclick="cp('${id}')">Copiar resumen</button><button class="btn g" onclick="rs('${id}')">Reiniciar</button></p><div class="mu" id="msg"></div>`;
 app.innerHTML=h;prog(id)}
-function prog(id){const t=total(id),d=Object.keys(state).filter(k=>k!=='obs'&&state[k].c).length;$('#pb').style.width=(100*d/t)+'%';$('#pt').textContent=d+' de '+t+' controles OK'}
+function prog(id){const t=total(id),d=Object.keys(state).filter(k=>k!=='obs'&&k!=='who'&&state[k].c).length;$('#pb').style.width=(100*d/t)+'%';$('#pt').textContent=d+' de '+t+' controles OK'}
 function tg(id,k,el){state[k]=state[k]||{};state[k].c=el.checked;$('#r'+k).classList.toggle('on',el.checked);save(id);prog(id)}
 function vl(id,k,v){state[k]=state[k]||{};state[k].v=v;save(id)}
+function env(id){const S=ST[id],m=$('#msg');if(!(state.who&&state.who.v)){m.textContent='Escribe tu nombre en Responsable antes de enviar.';return}
+let ok=0,t=0,pen=[],det=[];S.s.forEach((sec,si)=>sec[1].forEach((it,ii)=>{const x=state[si+'_'+ii]||{};t++;if(x.c)ok++;else pen.push(it[0]);det.push((x.c?'OK: ':'PENDIENTE: ')+it[0]+(x.v?' ['+x.v+']':''))}));
+m.textContent='Enviando...';send({tipo:'registro',estacion:S.n,responsable:state.who.v,cumplidos:ok,total:t,pct:Math.round(100*ok/t),pendientes:pen.join(' | '),obs:(state.obs&&state.obs.v)||'',detalle:det.join(' | ')}).then(r=>m.textContent=r?'Registro enviado. Gracias.':'No se pudo enviar (revisa conexión).')}
 function rs(id){if(confirm('¿Reiniciar checklist de hoy?')){state={};save(id);stView(id)}}
 function cp(id){const S=ST[id];let t=`Checklist ${S.n} - ${new Date().toLocaleString('es-CL')}\n`;S.s.forEach((sec,si)=>sec[1].forEach((it,ii)=>{const s=state[si+'_'+ii]||{};t+=(s.c?'✅ ':'⬜ ')+it[0]+(s.v?' ['+s.v+']':'')+'\n'}));if(state.obs&&state.obs.v)t+='Obs: '+state.obs.v;
 const m=$('#msg');navigator.clipboard.writeText(t).then(()=>m.textContent='Resumen copiado.',()=>{m.textContent='No se pudo copiar automáticamente.'})}
