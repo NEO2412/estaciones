@@ -1,0 +1,237 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F5EBDC">
+<title>Checklist por estación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,600..900,0..100&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{
+  --crema:#F5EBDC; --cafe:#502314; --rojo:#D62300; --verde:#198737; --naranja:#FF8732; --amarillo:#FFAA00;
+  --bg:#F5EBDC; --surface:#FFFAF3; --ink:#502314; --muted:#7D5747; --line:rgba(80,35,20,.17);
+  --field:#FFFFFF; --ok:#198737; --warn:#D62300; --pending:#E2CFB6;
+  --bar:#502314; --barText:#F5EBDC; --accent:#D62300; --btnS:#502314; --btnSText:#F5EBDC;
+  color-scheme:light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#21100A; --surface:#30180E; --ink:#F5EBDC; --muted:#CBB4A2; --line:rgba(245,235,220,.15);
+    --field:#3B2014; --ok:#38B55E; --warn:#FF5A36; --pending:#4A2C1E;
+    --bar:#3B1A0E; --barText:#F5EBDC; --accent:#FF8732; --btnS:#F5EBDC; --btnSText:#502314;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#21100A; --surface:#30180E; --ink:#F5EBDC; --muted:#CBB4A2; --line:rgba(245,235,220,.15);
+  --field:#3B2014; --ok:#38B55E; --warn:#FF5A36; --pending:#4A2C1E;
+  --bar:#3B1A0E; --barText:#F5EBDC; --accent:#FF8732; --btnS:#F5EBDC; --btnSText:#502314;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 20px)}
+body{margin:0; background:var(--bg); color:var(--ink); font:400 16px/1.4 Rubik, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-text-size-adjust:100%}
+body.has-bar{padding-bottom:124px}
+.display{font-family:Fraunces, Georgia, serif; font-weight:900; font-variation-settings:"SOFT" 100}
+button{font-family:inherit; cursor:pointer}
+button:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible{outline:3px solid var(--naranja); outline-offset:2px}
+
+/* Encabezado */
+.hero{position:relative; overflow:hidden; max-width:760px; margin:0 auto; padding:24px 20px 18px}
+.hero-text{position:relative; z-index:1; max-width:64%}
+.back{position:relative; z-index:1; display:inline-flex; align-items:center; gap:6px; margin:0 0 14px; background:none; border:0; padding:4px 0; color:var(--muted); font:500 14px Rubik, sans-serif; text-decoration:none}
+.hero h1{margin:0; font-size:clamp(32px,10vw,48px); line-height:.94; letter-spacing:-.01em; color:var(--ink)}
+.store{margin:8px 0 0; font-family:Fraunces, Georgia, serif; font-weight:800; font-variation-settings:"SOFT" 100; font-size:20px; color:var(--accent)}
+.date{margin:10px 0 0; font-size:14px; color:var(--muted)}
+.date::first-letter{text-transform:uppercase}
+.pills{position:absolute; top:-20px; right:-56px; width:220px; height:200px; pointer-events:none}
+.pills i{position:absolute; height:40px; width:210px; border-radius:999px; transform-origin:20px 20px; transform:rotate(36deg)}
+.pills i:nth-child(1){top:-6px; left:104px; background:var(--naranja)}
+.pills i:nth-child(2){top:12px; left:58px; background:var(--verde)}
+.pills i:nth-child(3){top:40px; left:12px; background:var(--rojo)}
+.progress{position:relative; z-index:1; margin-top:20px}
+.progress .count{font-size:28px; line-height:1}
+.progress .count small{font-family:Rubik, sans-serif; font-weight:500; font-size:14px; color:var(--muted); margin-left:6px}
+.track{height:12px; border-radius:999px; background:var(--line); margin-top:10px; overflow:hidden}
+.track i{display:block; height:100%; width:0; background:var(--verde); border-radius:999px; transition:width .35s ease}
+.sync{margin-top:8px; font-size:13px; color:var(--muted); display:flex; align-items:center; gap:6px}
+.sync::before{content:""; width:8px; height:8px; border-radius:50%; background:var(--ok)}
+
+/* Contenido */
+.main{max-width:760px; margin:0 auto; padding:4px 16px 16px}
+.sec{margin:22px 4px 10px; font-size:22px; line-height:1.1; color:var(--ink)}
+.sec small{display:block; font:500 13px Rubik, sans-serif; color:var(--muted); margin-top:4px}
+.list{display:grid; gap:10px}
+.card{display:block; background:var(--surface); border:1px solid var(--line); border-left:7px solid var(--pending); border-radius:16px; padding:14px; cursor:pointer; transition:border-color .15s}
+.card.done{border-left-color:var(--ok)}
+.card-top{display:flex; gap:12px; align-items:flex-start}
+.card input[type=checkbox]{position:absolute; opacity:0; width:1px; height:1px}
+.tick{flex:none; width:30px; height:30px; border-radius:50%; border:2px solid var(--line); background:var(--field); display:grid; place-items:center; color:transparent; transition:background .15s, border-color .15s}
+.card.done .tick{background:var(--ok); border-color:var(--ok); color:#fff}
+.card input:focus-visible + .tick{outline:3px solid var(--naranja); outline-offset:2px}
+.card .t{flex:1; font:500 16px/1.3 Rubik, sans-serif; padding-top:4px}
+.card.done .t{color:var(--muted)}
+.fld{display:block; margin:12px 0 0 42px}
+.fld span{display:block; font-size:13px; font-weight:500; color:var(--muted); margin-bottom:4px}
+.fld input{width:100%; height:48px; border:2px solid var(--line); border-radius:12px; background:var(--field); color:var(--ink); font:600 17px Rubik, sans-serif; padding:0 12px; font-variant-numeric:tabular-nums}
+.fld input:focus, .area:focus, .who:focus{outline:none; border-color:var(--naranja); box-shadow:0 0 0 3px rgba(255,135,50,.28)}
+
+.steps{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:6px 14px; margin:0; list-style:none; counter-reset:s}
+.steps li{counter-increment:s; display:flex; gap:12px; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--line)}
+.steps li:last-child{border:0}
+.steps li::before{content:counter(s); flex:none; width:26px; font:900 20px Fraunces, Georgia, serif; font-variation-settings:"SOFT" 100; color:var(--accent); text-align:center}
+
+.area,.who{width:100%; border:2px solid var(--line); border-radius:14px; background:var(--field); color:var(--ink); font:400 16px Rubik, sans-serif; padding:12px 14px}
+.who{height:52px; font-weight:500}
+.who.miss{border-color:var(--warn); box-shadow:0 0 0 3px rgba(214,35,0,.18)}
+
+.tools{max-width:760px; margin:8px auto 0; padding:8px 16px 24px; display:flex; flex-wrap:wrap; gap:8px 16px; font-size:13px; color:var(--muted)}
+.link{background:none; border:0; color:var(--accent); font:600 14px Rubik, sans-serif; padding:6px 2px; text-decoration:underline; text-underline-offset:2px}
+
+/* Inicio */
+.stations{display:grid; gap:12px; margin-top:6px}
+.st{display:flex; align-items:center; gap:14px; width:100%; text-align:left; background:var(--surface); border:1px solid var(--line); border-left:7px solid var(--pending); border-radius:16px; padding:16px; color:var(--ink)}
+.st.go{border-left-color:var(--naranja)}
+.st.full{border-left-color:var(--ok)}
+.st .ic{flex:none; width:46px; height:46px; border-radius:50%; background:var(--bg); display:grid; place-items:center; font-size:22px}
+.st .nm{flex:1}
+.st .nm b{display:block; font:900 21px/1.1 Fraunces, Georgia, serif; font-variation-settings:"SOFT" 100}
+.st .nm small{display:block; margin-top:3px; font-size:13px; color:var(--muted)}
+.st .ar{color:var(--muted); font-size:22px}
+
+/* Barra inferior */
+.bar{position:fixed; left:0; right:0; bottom:0; z-index:10; background:var(--bar); color:var(--barText); padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px)); box-shadow:0 -6px 18px rgba(40,15,5,.18)}
+.bar .inner{max-width:760px; margin:0 auto; display:flex; align-items:center; gap:12px}
+.bar .txt{flex:1; font-size:13.5px; line-height:1.25}
+.bar .txt b{display:block; font:900 19px Fraunces, Georgia, serif; font-variation-settings:"SOFT" 100}
+.btn{border:0; border-radius:999px; background:var(--rojo); color:#fff; font:700 16px Rubik, sans-serif; padding:15px 22px; white-space:nowrap}
+.btn:disabled{opacity:.6}
+.btn-ghost{border:2px solid var(--line); border-radius:999px; background:transparent; color:var(--ink); font:600 15px Rubik, sans-serif; padding:13px 18px}
+.btn-sm{border:0; border-radius:12px; background:var(--btnS); color:var(--btnSText); font:600 15px Rubik, sans-serif; padding:0 16px; height:48px}
+
+.toast{position:fixed; left:50%; bottom:calc(96px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%) translateY(20px); background:var(--ink); color:var(--bg); padding:11px 18px; border-radius:999px; font-size:14px; font-weight:500; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:20; max-width:calc(100% - 32px); text-align:center}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+.overlay{position:fixed; inset:0; z-index:30; background:rgba(30,10,4,.55); display:flex; align-items:flex-end; justify-content:center; padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.overlay[hidden]{display:none}
+.sheet{background:var(--surface); color:var(--ink); border-radius:20px; padding:20px; width:100%; max-width:440px}
+.sheet h2{margin:0 0 8px; font-size:22px; line-height:1.1}
+.sheet p{margin:0 0 18px; color:var(--muted)}
+.sheet .acts{display:flex; flex-direction:column; gap:10px}
+.sheet .btn,.sheet .btn-ghost{width:100%}
+
+/* QR */
+.qbase{display:flex; gap:8px; margin:6px 0 14px}
+.qbase input{flex:1; min-width:0; height:48px; border:2px solid var(--line); border-radius:12px; background:var(--field); color:var(--ink); font:400 15px Rubik, sans-serif; padding:0 12px}
+.qg{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px}
+.q{background:#fff; color:#502314; border:1px solid var(--line); border-radius:16px; padding:16px; text-align:center; break-inside:avoid}
+.q div{display:flex; justify-content:center}
+.q b{display:block; margin-top:10px; font:900 20px Fraunces, Georgia, serif; font-variation-settings:"SOFT" 100}
+.mu{color:var(--muted); font-size:14px}
+
+@media (min-width:600px){ .overlay{align-items:center} .hero-text{max-width:60%} }
+@media (prefers-reduced-motion: reduce){ .track i,.toast,.tick,.card{transition:none} }
+@media print{ .np,.bar,.toast{display:none!important} body{background:#fff; padding:0} .pills{display:none} }
+</style></head><body><div id="app"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="overlay" id="modal" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+<h2 class="display" id="mTitle"></h2><p id="mBody"></p>
+<div class="acts"><button class="btn" id="mOk" type="button"></button><button class="btn-ghost" id="mCancel" type="button">Cancelar</button></div></div></div>
+<script>
+const COMMON=[["Lavado de manos",[
+["Agua caliente disponible"],["Basurero con pedal"],["Jabón disponible"],["Fecha de vencimiento del jabón","d"],["Alcohol gel disponible"],["Fecha de vencimiento del alcohol gel","d"],
+["Stock: guantes"],["Stock: nova"],["Stock: cepillo"],["Stock: sani"]]],
+["Limpieza",[["Desagüe NO obstruido"],["Jaboneras limpias"],["Sin exceso de sarro"]]],
+["Procedimiento y ayuda visual",[["Afiche de lavado de manos visible y legible"],["Personal conoce el procedimiento (ver pasos abajo)"]]]];
+const SAN=["Sanitizante en concentración correcta","p"];
+const PHU=[["PHU siempre con tiempo de retención"],["Si suena una PHU: descartar producto y avisar a jefatura"]];
+const CAM=[["Cámaras revisadas con separación de cajas a pared"],["Cajas cerradas"]];
+const ST={
+lavado:{n:"Lavado de manos",i:"🧼",s:COMMON,wash:1},
+broiler:{n:"Broiler",i:"🔥",s:[["Tenazas",[["Tenazas dentro del taper y dentro del silver"],["4 tenazas en estación"],["Lift n grip y tenaza verde dentro del silver"],["Otra tenaza verde y una roja para sacar productos cocidos"],["Cada tenaza en su taper respectivo, sin cruces"]]],
+["Producto",[["Bolsas de carne en el silver, rotuladas con nombre y fecha de vencimiento","d"]]],
+["Higiene y equipo",[SAN,["Paño rojo respectivo en uso"],["Silver en buen funcionamiento"]]],
+["Cámaras y cajas",CAM]]},
+servicio:{n:"Servicio",i:"🛎️",s:[["Servicio",[["Boquilla de bebidas sin moho ni acumulación"],SAN,["Paño rojo respectivo en uso"],["Cajero NO es el mismo que arma o entrega pedidos"]]]]},
+fritos:{n:"Fritos",i:"🍟",s:[["Cestas y producto",[["Cada producto en una cesta diferente"],["Productos NO se colocan en la cesta sobre el aceite"],["Todas las bolsas y taper rotulados con fecha de vencimiento","d"]]],
+["Tenazas",[["4 tenazas en estación"],["Tenaza azul y verde dentro del silver"],["Otra verde y una roja para sacar productos fritos"],["Cada tenaza en su taper respectivo, sin cruces"]]],
+["Higiene y equipo",[SAN,["Paño rojo respectivo en uso"],["Silver en buen funcionamiento"]]],["Cámaras y cajas",CAM],["Control PHU",PHU]]},
+board:{n:"Board",i:"🥪",s:[["Board",[["Pan en retención máximo 30 seg"],SAN,["Paño rojo respectivo en uso"],["Sin contaminación cruzada"]]],["Control PHU",PHU]]},
+autoking:{n:"Auto-king",i:"🚗",s:[["Auto-king",[["Limpieza de carril"],["Ventanillas limpias"],["Menú del auto funcionando"],["3 speaker mínimos funcionando"],["Basura en exterior retirada"]]]]},
+postres:{n:"Centro de postres",i:"🍨",s:[["Centro de postres",[["Cepillos Taylor"],["Tiempos de retención"],["Limpieza"]]]]},
+comedor:{n:"Comedor ATM",i:"🪑",s:[["Comedor",[SAN]],["Baños de clientes",[["Baños: funcionamiento"],["Baños: stock"],["Baños: limpieza"]]],["ATM",[["Números de ATM disponibles"],["Rollo fiscal disponible"]]]]}};
+const WASH=["Mójate manos y antebrazos con agua caliente","Aplica jabón","Frota palmas entre sí","Frota dorso de cada mano con la otra","Entrelaza dedos y frota entre ellos","Frota uñas y pulgares","Cepilla uñas si corresponde","Enjuaga bien (total ~20 seg de fricción)","Seca con toalla desechable","Cierra la llave con la toalla y bota en basurero de pedal","Aplica alcohol gel"];
+const ENDPOINT="https://script.google.com/macros/s/AKfycbwxcwhNPinTWUuF8DcTihbvFkN0ccRFjq2cSpOs5dQbwARo47AVkmUtF8D4v4kU_W6S/exec";
+function send(o){if(!ENDPOINT||ENDPOINT.indexOf('http')!==0)return Promise.resolve(false);o.ua=navigator.userAgent.slice(0,90);return fetch(ENDPOINT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(o)}).then(()=>true,()=>false)}
+
+const $=s=>document.querySelector(s),app=$('#app');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const key=id=>'chk_'+id+'_'+new Date().toISOString().slice(0,10);
+const PILLS='<div class="pills" aria-hidden="true"><i></i><i></i><i></i></div>';
+const TICK='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const today=()=>new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'});
+let state={},cur=null;
+function read(id){try{return JSON.parse(localStorage.getItem(key(id))||'{}')}catch(e){return {}}}
+function load(id){state=read(id)}
+function save(id){try{localStorage.setItem(key(id),JSON.stringify(state))}catch(e){}}
+function total(id){return ST[id].s.reduce((a,s)=>a+s[1].length,0)}
+function doneOf(id,st){return Object.keys(st).filter(k=>k!=='obs'&&k!=='who'&&st[k]&&st[k].c).length}
+
+let tt;function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('show'),2600)}
+function ask(title,body,ok,fn){$('#mTitle').textContent=title;$('#mBody').textContent=body;$('#mOk').textContent=ok;const m=$('#modal');m.hidden=false;
+$('#mOk').onclick=()=>{m.hidden=true;fn()};$('#mCancel').onclick=()=>{m.hidden=true}}
+
+function route(){const id=location.hash.slice(1);document.body.classList.remove('has-bar');cur=null;
+if(id==='qr')return qrView();if(ST[id])return stView(id);home()}
+
+function home(){
+app.innerHTML=`<header class="hero">${PILLS}<div class="hero-text"><h1 class="display">Checklist de estaciones</h1><p class="date">${today()}</p></div></header>
+<main class="main"><div class="stations">${Object.keys(ST).map(k=>{const t=total(k),d=doneOf(k,read(k));
+return `<button class="st ${d===t?'full':d?'go':''}" onclick="location.hash='${k}'"><span class="ic" aria-hidden="true">${ST[k].i}</span><span class="nm"><b>${ST[k].n}</b><small>${d?d+' de '+t+' controles OK hoy':t+' controles'}</small></span><span class="ar" aria-hidden="true">›</span></button>`}).join('')}</div></main>
+<section class="tools np"><button class="link" onclick="location.hash='qr'">Generar códigos QR</button></section>`;scrollTo(0,0)}
+
+let opened={};
+function stView(id){load(id);cur=id;const S=ST[id];if(!opened[id]){opened[id]=1;send({tipo:'apertura',estacion:S.n})}
+let h=`<header class="hero">${PILLS}<button class="back np" onclick="location.hash=''">‹ Todas las estaciones</button>
+<div class="hero-text"><h1 class="display">${S.n}</h1><p class="date">${today()}</p></div>
+<div class="progress"><div class="count display"><span id="dn">0</span> de ${total(id)}<small>controles OK</small></div>
+<div class="track" role="progressbar" aria-label="Controles cumplidos" aria-valuemin="0" aria-valuemax="${total(id)}" id="trk"><i id="fill"></i></div>
+<div class="sync">Se guarda solo en este celular durante el día</div></div></header><main class="main">`;
+S.s.forEach((sec,si)=>{h+=`<h2 class="sec display">${esc(sec[0])}</h2><div class="list">`;
+sec[1].forEach((it,ii)=>{const k=si+'_'+ii,x=state[k]||{},on=!!x.c;
+let f='';if(it[1]){const d=it[1]==='d';f=`<label class="fld" onclick="event.stopPropagation()"><span>${d?'Fecha de vencimiento':'Concentración medida (ppm)'}</span><input type="${d?'date':'text'}" ${d?'':'inputmode="decimal" placeholder="Ej: 200"'} value="${esc(x.v||'')}" oninput="vl('${k}',this.value)"></label>`}
+h+=`<label class="card ${on?'done':''}" id="r${k}"><span class="card-top"><input type="checkbox" ${on?'checked':''} onchange="tg('${k}',this)"><span class="tick">${TICK}</span><span class="t">${esc(it[0])}</span></span>${f}</label>`});
+h+=`</div>`});
+if(S.wash)h+=`<h2 class="sec display">Procedimiento de lavado<small>Pasos que el personal debe conocer</small></h2><ol class="steps">${WASH.map(w=>`<li>${esc(w)}</li>`).join('')}</ol>`;
+h+=`<h2 class="sec display">Observaciones</h2><textarea class="area" rows="3" placeholder="Algo que reportar de la estación" oninput="vl('obs',this.value)">${esc((state.obs&&state.obs.v)||'')}</textarea>
+<h2 class="sec display">Responsable</h2><input class="who" id="who" placeholder="Nombre de quien revisa" autocomplete="name" value="${esc((state.who&&state.who.v)||'')}" oninput="vl('who',this.value);this.classList.remove('miss')"></main>
+<section class="tools np"><button class="link" onclick="cp()">Copiar resumen</button><button class="link" onclick="rs()">Reiniciar checklist de hoy</button></section>
+<div class="bar np"><div class="inner"><div class="txt"><b id="bd">0 de 0</b><span id="bt">controles OK</span></div><button class="btn" id="sendBtn" type="button" onclick="env()">Enviar registro</button></div></div>`;
+app.innerHTML=h;document.body.classList.add('has-bar');prog();scrollTo(0,0)}
+
+function prog(){const id=cur,t=total(id),d=doneOf(id,state);$('#fill').style.width=(100*d/t)+'%';$('#dn').textContent=d;$('#trk').setAttribute('aria-valuenow',d);
+$('#bd').textContent=d+' de '+t;$('#bt').textContent=d===t?'Todo OK, listo para enviar':(t-d)+' pendiente'+(t-d>1?'s':'')}
+function tg(k,el){state[k]=state[k]||{};state[k].c=el.checked;$('#r'+k).classList.toggle('done',el.checked);save(cur);prog()}
+function vl(k,v){state[k]=state[k]||{};state[k].v=v;save(cur)}
+
+let lastSig='';
+function env(){const id=cur,S=ST[id];if(!(state.who&&state.who.v&&state.who.v.trim())){const w=$('#who');w.classList.add('miss');w.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>w.focus(),350);toast('Escribe tu nombre en Responsable antes de enviar');return}
+const sig=id+JSON.stringify(state);if(sig===lastSig){toast('Este registro ya fue enviado');return}lastSig=sig;
+let ok=0,t=0,pen=[],det=[];S.s.forEach((sec,si)=>sec[1].forEach((it,ii)=>{const x=state[si+'_'+ii]||{};t++;if(x.c)ok++;else pen.push(it[0]);det.push((x.c?'OK: ':'PENDIENTE: ')+it[0]+(x.v?' ['+x.v+']':''))}));
+const b=$('#sendBtn');b.disabled=true;b.textContent='Enviando…';
+send({tipo:'registro',estacion:S.n,responsable:state.who.v,cumplidos:ok,total:t,pct:Math.round(100*ok/t),pendientes:pen.join(' | '),obs:(state.obs&&state.obs.v)||'',detalle:det.join(' | ')})
+.then(r=>{if(!r)lastSig='';b.disabled=false;b.textContent='Enviar registro';toast(r?'Registro enviado. Gracias':'No se pudo enviar, revisa la conexión')})}
+function rs(){ask('¿Reiniciar checklist?','Se borrará todo lo marcado hoy en esta estación.','Sí, reiniciar',()=>{state={};save(cur);stView(cur);toast('Checklist reiniciado')})}
+function cp(){const S=ST[cur];let t=`Checklist ${S.n} - ${new Date().toLocaleString('es-CL')}\n`;S.s.forEach((sec,si)=>sec[1].forEach((it,ii)=>{const s=state[si+'_'+ii]||{};t+=(s.c?'✅ ':'⬜ ')+it[0]+(s.v?' ['+s.v+']':'')+'\n'}));if(state.obs&&state.obs.v)t+='Obs: '+state.obs.v;
+navigator.clipboard.writeText(t).then(()=>toast('Resumen copiado'),()=>toast('No se pudo copiar automáticamente'))}
+
+function qrView(){let base;try{base=sessionStorage.getItem('base')}catch(e){}base=base||location.href.split('#')[0];
+app.innerHTML=`<header class="hero">${PILLS}<button class="back np" onclick="location.hash=''">‹ Volver</button><div class="hero-text"><h1 class="display">Códigos QR</h1></div></header>
+<main class="main"><p class="mu np">Pega aquí el enlace publicado de esta página. Luego imprime y pega cada QR en su estación.</p>
+<div class="qbase np"><input id="base" value="${esc(base)}" aria-label="Enlace de la página"><button class="btn-sm" onclick="gen()">Actualizar</button></div>
+<p class="np"><button class="btn" onclick="print()">Imprimir</button></p><div class="qg" id="qg"></div></main>`;gen();scrollTo(0,0)}
+function gen(){const b=$('#base').value.split('#')[0];try{sessionStorage.setItem('base',b)}catch(e){}const g=$('#qg');g.innerHTML='';
+Object.keys(ST).forEach(k=>{const d=document.createElement('div');d.className='q';d.innerHTML='<div></div><b>'+ST[k].n+'</b>';g.appendChild(d);new QRCode(d.firstChild,{text:b+'#'+k,width:170,height:170,colorDark:'#000000'})})}
+
+addEventListener('hashchange',route);route();
+</script></body></html>
